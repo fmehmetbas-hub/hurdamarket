@@ -1,0 +1,39 @@
+{
+  "name": "hurdamarket-backend",
+  "version": "2.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --config jest.config.json --forceExit",
+    "test:watch": "jest --config jest.config.json --watch",
+    "test:coverage": "jest --config jest.config.json --coverage --forceExit",
+    "db:migrate": "node migrate.js",
+    "db:test": "psql postgresql://localhost:5432/hurdamarket_test -f ../database/schema.sql"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express-validator": "^7.0.1",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "socket.io": "^4.6.1",
+    "nodemailer": "^6.9.7",
+    "winston": "^3.11.0",
+    "stripe": "14.x",
+    "redis": "^4.6.13",
+    "@sentry/node": "^8.0.0",
+    "@sentry/profiling-node": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  }
+}

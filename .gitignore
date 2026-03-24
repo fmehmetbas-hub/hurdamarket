@@ -1,0 +1,17 @@
+node_modules/
+.env
+dist/
+build/
+*.log
+.DS_Store
+.idea/
+.vscodedb/
+coverage/
+.next/
+out/
+.vercel
+/mobile/node_modules/
+/frontend/node_modules/
+/backend/node_modules/
+backend/postgres_installer.exe
+backend/*.sql

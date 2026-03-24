@@ -1,0 +1,10 @@
+{
+  "testEnvironment": "node",
+  "testMatch": ["**/tests/**/*.test.js"],
+  "setupFiles": ["dotenv/config"],
+  "globalSetup": "./src/tests/setup.js",
+  "collectCoverageFrom": ["src/**/*.js", "!src/tests/**"],
+  "coverageThreshold": {
+    "global": { "lines": 60 }
+  }
+}

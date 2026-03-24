@@ -1,0 +1,144 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── TEST ──────────────────────────────────────────
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: hurdamarket_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend bağımlılıkları yükle
+        working-directory: backend
+        run: npm ci
+
+      - name: Test DB şemasını uygula
+        working-directory: backend
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d hurdamarket_test \
+            -f ../database/schema.sql
+
+      - name: Testleri çalıştır
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hurdamarket_test
+          JWT_SECRET: test-secret-key-minimum-32-chars-long!!
+          NODE_ENV: test
+        run: npm test -- --forceExit --coverage
+
+      - name: Coverage raporu yükle
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          directory: backend/coverage
+
+  # ── DEPLOY BACKEND ────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend (Railway)
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Railway CLI kur
+        run: npm install -g @railway/cli
+
+      - name: Railway'e deploy et
+        working-directory: backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service hurdamarket-backend --detach
+
+  # ── DEPLOY FRONTEND ───────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend bağımlılıkları yükle
+        working-directory: frontend
+        run: npm ci
+
+      - name: Production build
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Vercel CLI kur
+        run: npm install -g vercel
+
+      - name: Vercel'e deploy et
+        working-directory: frontend
+        env:
+          VERCEL_TOKEN:   ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID:  ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel --prod --token=$VERCEL_TOKEN
+
+  # ── NOTIFY ────────────────────────────────────────
+  notify:
+    name: Bildirim
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy sonucu bildir
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          STATUS="✅ Deploy başarılı"
+          if [ "${{ needs.deploy-backend.result }}" != "success" ] || \
+             [ "${{ needs.deploy-frontend.result }}" != "success" ]; then
+            STATUS="❌ Deploy başarısız"
+          fi
+          curl -s -X POST $SLACK_WEBHOOK \
+            -H 'Content-type: application/json' \
+            -d "{\"text\": \"$STATUS — HurdaMarket @ $(date '+%Y-%m-%d %H:%M')\"}" || true

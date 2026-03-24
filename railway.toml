@@ -1,0 +1,13 @@
+# Railway deployment configuration
+# Bu dosya projenin kökünde olmalı
+
+[build]
+builder = "nixpacks"
+buildCommand = "cd backend && npm ci"
+
+[deploy]
+startCommand = "cd backend && npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
