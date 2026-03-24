@@ -9,10 +9,10 @@ const logger   = require('./logger');
  */
 const sendSms = (phone, message) => {
   return new Promise((resolve, reject) => {
-    if (process.env.NODE_ENV !== 'production') {
-      // Geliştirme ortamında gerçek SMS göndermez, loglara yazar
-      logger.info(`[SMS-DEV] ${phone} → ${message}`);
-      return resolve({ success: true, dev: true });
+    if (process.env.NODE_ENV !== 'production' || process.env.SMS_TEST_MODE === 'true') {
+      // Geliştirme veya Test modunda gerçek SMS göndermez, loglara yazar
+      logger.info(`[SMS-TEST-MODE] ${phone} → ${message}`);
+      return resolve({ success: true, testMode: true });
     }
 
     const params = new URLSearchParams({

@@ -5,7 +5,10 @@ const { AppError, catchAsync } = require('../utils/errors');
 const { sendOtpSms }           = require('../utils/notifications');
 const logger                   = require('../utils/logger');
 
-const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+const generateOtp = () => {
+  if (process.env.SMS_TEST_MODE === 'true') return '123456';
+  return String(Math.floor(100000 + Math.random() * 900000));
+};
 
 const signToken = (userId) => jwt.sign(
   { userId },
