@@ -20,6 +20,7 @@ const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
 
 const app    = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // Sentry — express middleware'den ÖNCE init edilmeli
